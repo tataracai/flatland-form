@@ -1,14 +1,13 @@
 <!DOCTYPE html>
 <html lang="ja">
 <head>
-<link rel="apple-touch-icon" href="/icon.png">
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
 <meta name="apple-mobile-web-app-capable" content="yes">
 <meta name="apple-mobile-web-app-status-bar-style" content="default">
 <meta name="apple-mobile-web-app-title" content="Guild Admin">
 <meta name="theme-color" content="#faf8f4">
-<title>Flatland　メンバー管理</title>
+<title>Guild Admin</title>
 <link href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@300;400;500;600&family=DM+Mono:wght@400;500&display=swap" rel="stylesheet">
 <style>
 :root {
@@ -488,14 +487,23 @@ select.finput {
     <!-- Gallery -->
     <div class="page" id="page-gallery">
       <div class="sh"><span class="sh-t">Works</span><span class="sh-c" id="g-cnt"></span></div>
-      <div class="chips" id="gallery-chips">
-        <button class="chip on" onclick="filterG('all',this)">すべて</button>
-        <button class="chip" onclick="filterG('bronze',this)">🥉 Bronze</button>
-        <button class="chip" onclick="filterG('silver',this)">🥈 Silver</button>
-        <button class="chip" onclick="filterG('gold',this)">🥇 Gold</button>
-        <button class="chip" onclick="filterG('plat',this)">💠 Plat</button>
-        <button class="chip" onclick="filterG('diamond',this)">💎 Diamond</button>
-        <button class="chip" onclick="filterG('master',this)">👑 Master</button>
+      <!-- フォルダタブ -->
+      <div class="chips" id="folder-chips">
+        <button class="chip on" onclick="filterFolder('all',this)">すべて</button>
+        <button class="chip" onclick="filterFolder('training',this)">📚 トレーニング</button>
+        <button class="chip" onclick="filterFolder('quest',this)">⚔️ クエスト</button>
+        <button class="chip" onclick="filterFolder('raid',this)">🛡 レイド</button>
+        <button class="chip" onclick="filterFolder('gallery',this)">🎨 ギャラリー</button>
+      </div>
+      <!-- ランクフィルター -->
+      <div class="chips" id="gallery-chips" style="margin-top:-4px">
+        <button class="chip on" onclick="filterG('all',this)">全ランク</button>
+        <button class="chip" onclick="filterG('bronze',this)">🥉</button>
+        <button class="chip" onclick="filterG('silver',this)">🥈</button>
+        <button class="chip" onclick="filterG('gold',this)">🥇</button>
+        <button class="chip" onclick="filterG('plat',this)">💠</button>
+        <button class="chip" onclick="filterG('diamond',this)">💎</button>
+        <button class="chip" onclick="filterG('master',this)">👑</button>
       </div>
       <div id="gallery-list"></div>
     </div>
@@ -579,6 +587,19 @@ select.finput {
       <div style="font-size:14px;font-weight:600;color:var(--ink);margin-bottom:14px">作品を追加（任意）</div>
       <div class="field"><label class="field-label">作品タイトル</label><input class="finput" id="ev-title" placeholder="キャラクターデザイン vol.3"></div>
       <div class="field"><label class="field-label">Google Drive URL</label><input class="finput" type="url" id="ev-url" placeholder="https://drive.google.com/..."></div>
+      <div class="field">
+        <label class="field-label">フォルダ</label>
+        <select class="finput" id="ev-folder">
+          <option value="training">📚 トレーニング</option>
+          <option value="quest">⚔️ クエスト WIP</option>
+          <option value="raid">🛡 レイド</option>
+          <option value="gallery">🎨 ギャラリー（完成作品）</option>
+        </select>
+      </div>
+      <div class="field" id="ev-raid-wrap" style="display:none">
+        <label class="field-label">参加メンバー（レイド用）</label>
+        <input class="finput" id="ev-members" placeholder="例：Taro, Misaki, Ken">
+      </div>
       <div class="field"><label class="field-label">フィードバック</label><textarea class="finput" id="ev-fb" placeholder="作品へのコメント…" rows="3"></textarea></div>
       <div class="btn-row">
         <button class="btn btn-ghost" onclick="closeSheet('sheet-eval')">キャンセル</button>
@@ -605,10 +626,17 @@ select.finput {
       <div class="field"><label class="field-label">メールアドレス</label><input class="finput" type="email" id="add-email" placeholder="taro@example.com"></div>
       <div class="field-row" style="margin-bottom:16px">
         <div class="field"><label class="field-label">入学媒体</label>
-          <select class="finput" id="add-media"><option>Twitter</option><option>vaultroom</option><option>Discord</option><option>YouTube</option><option>紹介</option><option>その他</option></select>
+          <select class="finput" id="add-media"><option>Twitter</option><option>Instagram</option><option>Discord</option><option>YouTube</option><option>紹介</option><option>その他</option></select>
         </div>
         <div class="field"><label class="field-label">初期ランク</label>
-          <select class="finput" id="add-rank"><option value="bronze">Bronze</option><option value="silver">Silver</option><option value="gold">Gold</option></select>
+          <select class="finput" id="add-rank">
+            <option value="bronze">🥉 Bronze</option>
+            <option value="silver">🥈 Silver</option>
+            <option value="gold">🥇 Gold</option>
+            <option value="plat">💠 Plat</option>
+            <option value="diamond">💎 Diamond</option>
+            <option value="master">👑 Master</option>
+          </select>
         </div>
       </div>
       <div class="field"><label class="field-label">履歴書（Drive URL）</label><input class="finput" id="add-resume" placeholder="https://drive.google.com/..."></div>
@@ -695,7 +723,7 @@ async function gasPost(data) {
 }
 
 
-let mFilter='all', gFilter='all', aFilter='all';
+let mFilter='all', gFilter='all', folderFilter='all', aFilter='all';
 let evalScores={skill:1,growth:1,contrib:1,contin:1}, evalTargetId=null;
 const PAGE_TITLES = {dashboard:'Dashboard',members:'Members',gallery:'Works',promotion:'昇格審査',applications:'申請'};
 
@@ -789,7 +817,27 @@ function renderMembers(){
   }).join('') || '<div style="text-align:center;padding:40px;color:var(--ink4);font-family:var(--mono)">該当なし</div>';
 }
 
-function deleteMember(id, name) {
+// ── ランク変更 ─────────────────────────────────────────────────
+function changeRank(mId, direction) {
+  const m = MEMBERS.find(x=>x.id===mId); if(!m) return;
+  const idx = RANK_ORDER.indexOf(m.rank);
+  const newIdx = idx + direction;
+  if(newIdx < 0 || newIdx >= RANK_ORDER.length) return;
+  const newRank = RANK_ORDER[newIdx];
+  const R = RANKS[newRank];
+  if(!confirm(`${m.name} のランクを\n${RANKS[m.rank].icon} ${RANKS[m.rank].label} → ${R.icon} ${R.label}\nに変更しますか？`)) return;
+  m.rank = newRank;
+  // GASに保存
+  gasPost({ action:'updateMember', id:m.id, rank:newRank })
+    .catch(()=>console.warn('ランク保存失敗'));
+  // 画面更新
+  renderDash();
+  if(document.getElementById('page-members').classList.contains('on')) renderMembers();
+  if(document.getElementById('page-promotion').classList.contains('on')) renderPromo();
+  closeSheet('sheet-member');
+}
+
+
   if(!confirm(`${name} を削除しますか？\nこの操作は取り消せません。`)) return;
   MEMBERS = MEMBERS.filter(m => m.id !== id);
   renderMembers();
@@ -880,41 +928,63 @@ function openMemberSheet(mId){
       <button class="btn btn-ghost" onclick="closeSheet('sheet-member')">閉じる</button>
       <button class="btn btn-solid" onclick="closeSheet('sheet-member');openEvalSheet('${m.id}')">✎ 評価入力</button>
     </div>
+    <div style="display:flex;gap:8px;margin-top:10px">
+      <button onclick="changeRank('${m.id}',-1)" style="flex:1;padding:9px;border-radius:9px;border:1px solid var(--rule2);background:var(--bg);color:var(--ink2);font:13px var(--sans);cursor:pointer">⬇ ランクを下げる</button>
+      <button onclick="changeRank('${m.id}',1)"  style="flex:1;padding:9px;border-radius:9px;border:none;background:var(--diamond);color:white;font:13px var(--sans);cursor:pointer;font-weight:500">⬆ ランクを上げる</button>
+    </div>
     <div style="height:8px"></div>`;
 
   openSheet('sheet-member');
 }
 
 // ── Gallery ────────────────────────────────────────────────────
+const FOLDER_MAP = {
+  training: {label:'トレーニング', icon:'📚', color:'#1a8a4a', th:'wt-c'},
+  quest:    {label:'クエスト WIP',  icon:'⚔️',  color:'#3a5ac4', th:'wt-b'},
+  raid:     {label:'レイド',        icon:'🛡',  color:'#7a2ab4', th:'wt-e'},
+  gallery:  {label:'ギャラリー',    icon:'🎨',  color:'#b88000', th:'wt-a'},
+};
+
 function renderGallery(){
-  const list=(gFilter==='all'?WORKS:WORKS.filter(w=>{
-    const m=MEMBERS.find(x=>x.id===w.mId);
-    return m&&m.rank===gFilter;
-  })).sort((a,b)=>b.id.localeCompare(a.id));
-  document.getElementById('g-cnt').textContent=list.length+'件';
-  document.getElementById('gallery-list').innerHTML=list.map(w=>{
-    const m=MEMBERS.find(x=>x.id===w.mId);
-    const R=m?RANKS[m.rank]:null;
+  let list = [...WORKS].sort((a,b)=>b.id.localeCompare(a.id));
+  if(folderFilter !== 'all') list = list.filter(w => w.folder === folderFilter);
+  if(gFilter !== 'all') list = list.filter(w => {
+    const m = MEMBERS.find(x=>x.id===w.mId);
+    return m && m.rank === gFilter;
+  });
+  document.getElementById('g-cnt').textContent = list.length+'件';
+  document.getElementById('gallery-list').innerHTML = list.map(w=>{
+    const m = MEMBERS.find(x=>x.id===w.mId);
+    const R = m ? RANKS[m.rank] : null;
+    const F = FOLDER_MAP[w.folder] || FOLDER_MAP.gallery;
     return `<div class="wcard" onclick="window.open('${w.url}')">
-      <div class="wthumb ${w.th}">
-        <span>${w.icon}</span>
-        ${R?`<span class="wcat" style="background:${R.bg};color:${R.color};border:1px solid ${R.border}">${R.icon} ${R.label}</span>`:''}
+      <div class="wthumb ${F.th}" style="position:relative">
+        <span style="font-size:36px">${w.icon||F.icon}</span>
+        <span class="wcat" style="background:${F.color}18;color:${F.color};border:1px solid ${F.color}40">${F.icon} ${F.label}</span>
+        ${R?`<span style="position:absolute;top:8px;right:44px;font-size:15px">${R.icon}</span>`:''}
         <span class="wscore ${scClass(w.score)}" style="color:${scColor(w.score)}">${w.score}</span>
       </div>
       <div class="wbody">
         <div class="wtitle">${w.title}</div>
         <div class="wmeta">
           <span>${w.disc}</span>
+          ${w.folder==='raid'&&w.members?`<span style="color:var(--master);font-size:10.5px;margin-left:4px">👥 ${w.members}</span>`:''}
           <span style="margin-left:auto;color:var(--ink4)">${w.date}</span>
         </div>
-        <div class="wfb">${w.fb}</div>
-        <div style="display:flex;align-items:center;gap:7px;margin-top:9px">
-          <span style="font-size:10.5px;padding:2px 7px;border-radius:4px;font-family:var(--mono);background:${w.pub==='公開'?'var(--plat-bg)':'var(--diamond-bg)'};color:${w.pub==='公開'?'var(--plat)':'var(--diamond)'}">${w.pub}</span>
-          <a href="${w.url}" style="margin-left:auto;font-size:12px;color:var(--diamond);font-family:var(--mono);text-decoration:none" onclick="event.stopPropagation()">Drive ↗</a>
+        <div class="wfb">${w.fb||''}</div>
+        <div style="margin-top:8px">
+          <a href="${w.url}" style="font-size:12px;color:var(--diamond);font-family:var(--mono);text-decoration:none" onclick="event.stopPropagation()">Drive ↗</a>
         </div>
       </div>
     </div>`;
-  }).join('');
+  }).join('') || '<div style="text-align:center;padding:40px;color:var(--ink4);font-family:var(--mono)">作品がありません</div>';
+}
+
+function filterFolder(f,el){
+  folderFilter=f;
+  document.querySelectorAll('#folder-chips .chip').forEach(b=>b.classList.remove('on'));
+  el.classList.add('on');
+  renderGallery();
 }
 
 function filterG(f,el){
@@ -922,6 +992,7 @@ function filterG(f,el){
   document.querySelectorAll('#gallery-chips .chip').forEach(b=>b.classList.remove('on'));
   el.classList.add('on'); renderGallery();
 }
+
 
 // ── Promotion ──────────────────────────────────────────────────
 function renderPromo(){
@@ -1005,7 +1076,11 @@ function renderPromo(){
           }).join('')}
         </div>` : ''}` : `<div style="font-size:12px;color:var(--master);padding:4px 0">ギルドコアメンバーとして活動中</div>`}
 
-        <button onclick="openEvalSheet('${m.id}')" style="width:100%;padding:8px;border-radius:8px;border:1px solid var(--rule2);background:transparent;color:var(--ink2);font:12px var(--sans);cursor:pointer">✎ 評価入力</button>
+        <div style="display:flex;gap:7px;margin-top:8px">
+          <button onclick="openEvalSheet('${m.id}')" style="flex:1;padding:8px;border-radius:8px;border:1px solid var(--rule2);background:transparent;color:var(--ink2);font:12px var(--sans);cursor:pointer">✎ 評価入力</button>
+          <button onclick="changeRank('${m.id}',-1)" style="padding:8px 12px;border-radius:8px;border:1px solid var(--rule2);background:var(--bg);color:var(--ink3);font:12px var(--sans);cursor:pointer">⬇</button>
+          <button onclick="changeRank('${m.id}',1)"  style="padding:8px 12px;border-radius:8px;border:none;background:var(--diamond);color:white;font:13px var(--sans);cursor:pointer;font-weight:600">⬆</button>
+        </div>
       </div>`;
     });
   });
@@ -1052,7 +1127,14 @@ function filterA(f,el){
 }
 
 function updateAppStatus(id,val){
-  const a=APPS.find(x=>x.id===id); if(a){a.status=val; renderApps();}
+  const a=APPS.find(x=>x.id===id);
+  if(a){
+    a.status=val;
+    renderApps();
+    // GASに保存
+    gasPost({ action:'updateApp', id, status:val })
+      .catch(() => console.warn('申請ステータスの保存に失敗'));
+  }
 }
 
 // ── Eval Sheet ─────────────────────────────────────────────────
@@ -1062,6 +1144,10 @@ function openEvalSheet(mId){
   sel.innerHTML=MEMBERS.map(m=>`<option value="${m.id}" ${m.id===mId?'selected':''}>${m.name}（${m.disc}）</option>`).join('');
   if(mId) onEvalMemberChange(mId);
   buildEvalAxes();
+  // フォルダ選択でraidメンバー欄の表示切替
+  document.getElementById('ev-folder').onchange = function(){
+    document.getElementById('ev-raid-wrap').style.display = this.value==='raid'?'block':'none';
+  };
   openSheet('sheet-eval');
 }
 
@@ -1138,21 +1224,38 @@ function submitEval(){
   const title=document.getElementById('ev-title').value.trim();
   const url=document.getElementById('ev-url').value.trim();
   if(title&&url){
-    const th_map={イラスト:'wt-a',テキスト:'wt-b',ドキュメント:'wt-c',コード:'wt-d',デザイン:'wt-e'};
-    const icon_map={イラスト:'🎨',テキスト:'📝',ドキュメント:'📄',デザイン:'🖼',コード:'💻',映像:'🎬'};
     const sc=Math.min(100,Math.round((evalScores.skill*6+evalScores.growth*4+evalScores.contin*4)*2));
-    WORKS.unshift({
-      id:'W'+String(WORKS.length+1).padStart(3,'0'),
-      mId:evalTargetId,disc:m.disc,
-      title,url,cat:'作品',score:sc,
+    const folder=document.getElementById('ev-folder').value||'gallery';
+    const members=document.getElementById('ev-members').value.trim();
+    const F=FOLDER_MAP[folder]||FOLDER_MAP.gallery;
+    const newWork = {
+      id:'W_tmp_'+Date.now(),
+      mId:evalTargetId, disc:m.disc,
+      title, url, cat:F.label, score:sc,
       fb:document.getElementById('ev-fb').value||'評価済み',
-      pub:'公開',
+      pub:'公開', folder,
+      members: members||'',
       date:new Date().toISOString().slice(0,10),
-      th:'wt-a',icon:'📎',catC:'wcat-doc'
-    });
+      th:F.th, icon:F.icon, catC:'wcat-doc'
+    };
+    WORKS.unshift(newWork);
     document.getElementById('ev-title').value='';
     document.getElementById('ev-url').value='';
     document.getElementById('ev-fb').value='';
+    document.getElementById('ev-members').value='';
+    // GASに作品を保存
+    gasPost({
+      action:'addWork',
+      mId:evalTargetId, disc:m.disc,
+      title, url, score:sc, folder, members,
+      fb:newWork.fb, pub:'公開',
+      date:newWork.date, th:F.th, icon:F.icon,
+    }).then(res => {
+      if(res && res.id) {
+        const w = WORKS.find(x => x.id === newWork.id);
+        if(w) w.id = res.id;
+      }
+    }).catch(() => console.warn('作品の保存に失敗'));
   }
   closeSheet('sheet-eval');
   alert(`${m.name} の評価を保存しました`);
@@ -1259,10 +1362,9 @@ window.addEventListener('appinstalled',()=>{
 async function init() {
   showLoading(true);
   try {
-    const data = await gasGet('getMembers');
-    if (Array.isArray(data) && data.length > 0) {
-      // GASのシートデータをアプリの形式に変換
-      MEMBERS = data.map(row => ({
+    const data = await gasGet('getAll');
+    if (data && data.members) {
+      MEMBERS = data.members.map(row => ({
         id:     row.id     || '',
         name:   row.name   || '',
         disc:   row.disc   || '',
@@ -1271,7 +1373,7 @@ async function init() {
         join:   row.join   || '',
         media:  row.media  || '',
         status: row.status || 'アクティブ',
-        port:   row.port   || '',
+        port:   '',
         resume: row.resume || '',
         eval: {
           skill:  Number(row.skill)  || 1,
@@ -1279,11 +1381,42 @@ async function init() {
           contrib:Number(row.contrib)|| 1,
           contin: Number(row.contin) || 1,
         },
-        conds: row.conds ? JSON.parse(row.conds) : {},
+        conds: (() => { try { return JSON.parse(row.conds||'{}'); } catch(e){ return {}; } })(),
+      }));
+    }
+    if (data && data.works) {
+      WORKS = data.works.map(row => ({
+        id:    row.id    || '',
+        mId:   row.mId   || '',
+        disc:  row.disc  || '',
+        title: row.title || '',
+        date:  row.date  || '',
+        url:   row.url   || '#',
+        score: Number(row.score) || 0,
+        fb:    row.fb    || '',
+        pub:   row.pub   || '公開',
+        th:    row.th    || 'wt-a',
+        icon:  row.icon  || '📎',
+        cat:   '作品', catC:'wcat-doc',
+      }));
+    }
+    if (data && data.apps) {
+      APPS = data.apps.map(row => ({
+        id:     row.id     || '',
+        date:   row.date   || '',
+        name:   row.name   || '',
+        disc:   row.disc   || '',
+        email:  row.email  || '',
+        media:  row.media  || '',
+        score:  Number(row.score) || 0,
+        status: row.status || '書類審査中',
+        owner:  row.owner  || '',
+        url:    row.url    || '#',
+        resume: row.resume || '',
       }));
     }
   } catch(e) {
-    console.warn('GAS読み込み失敗。サンプルデータで起動します。', e);
+    console.warn('GAS読み込み失敗:', e);
   }
   showLoading(false);
   renderDash();
