@@ -908,7 +908,7 @@ function renderMembers(){
         <div class="av av-${m.rank}" style="width:42px;height:42px">${m.name[0]}</div>
         <div style="flex:1;min-width:0">
           <div class="mcard-name">${m.name}</div>
-          <div class="mcard-disc">${m.disc}</div>
+          <div class="mcard-disc" onclick="event.stopPropagation();navigator.clipboard.writeText('${m.disc}').then(()=>alert('Discord IDをコピーしました'))" style="cursor:pointer" title="タップしてコピー">${m.disc} 📋</div>
         </div>
         ${rankBadge(m.rank)}
       </div>
@@ -1053,8 +1053,8 @@ function openMemberSheet(mId){
         </div>
         <div style="font-size:12px;color:var(--ink3);font-family:var(--mono)">${m.disc}</div>
         <div style="margin-top:7px;display:flex;gap:5px;flex-wrap:wrap">
-          <span class="mtag">📡 ${m.media}</span><span class="mtag">📅 ${m.join}</span>
-          <span class="mtag">作品 ${wks.length}件</span>${avg?`<span class="mtag">avg ${avg}pt</span>`:''}
+          <span class="mtag">📡 ${m.media}</span><span class="mtag">📅 ${String(m.join).slice(0,10)}</span>
+          <span class="mtag">作品 ${wks.length}件</span>
         </div>
       </div>
     </div>`;
@@ -1084,23 +1084,36 @@ function openMemberSheet(mId){
       <div class="mdl-section-title">作品履歴（${wks.length}件）</div>
       ${wks.length?wks.map(w=>`
         <a href="${w.url}" class="wt-item" style="text-decoration:none">
-          <div class="wt-icon ${w.th}">${w.icon}</div>
+          <div class="wt-icon ${FOLDER_MAP[w.folder]?FOLDER_MAP[w.folder].th:'wt-a'}">${w.icon||'📎'}</div>
           <div style="flex:1;min-width:0">
             <div style="font-size:13px;font-weight:600;color:var(--ink);white-space:nowrap;overflow:hidden;text-overflow:ellipsis">${w.title}</div>
-            <div style="font-size:11px;color:var(--ink3);margin-top:1px">${w.date} · ${w.cat} · ${w.pub}</div>
-            <div style="font-size:11.5px;color:var(--ink2);margin-top:3px;font-style:italic">${w.fb}</div>
+            <div style="font-size:11px;color:var(--ink3);margin-top:1px">${String(w.date).slice(0,10)}</div>
+            ${w.fb?`<div style="font-size:11.5px;color:var(--ink2);margin-top:3px;font-style:italic">${w.fb}</div>`:''}
           </div>
-          <span class="${scClass(w.score)}" style="font-family:var(--mono);font-size:14px;font-weight:700;flex-shrink:0">${w.score}</span>
         </a>`).join(''):'<div style="color:var(--ink4);font-size:12px;padding:8px 0">まだ作品がありません</div>'}
     </div>
 
     <div style="margin-bottom:16px">
       <div class="mdl-section-title">基本情報</div>
-      ${[['メール',m.email],['入学媒体',m.media],['入会日',m.join]].map(([l,v])=>`
-        <div style="display:flex;gap:10px;margin-bottom:7px">
-          <span style="font-size:11px;color:var(--ink4);font-family:var(--mono);min-width:60px">${l}</span>
-          <span style="font-size:13px;color:var(--ink2)">${v}</span>
-        </div>`).join('')}
+      <div style="display:flex;gap:10px;margin-bottom:7px">
+        <span style="font-size:11px;color:var(--ink4);font-family:var(--mono);min-width:60px">メール</span>
+        ${m.email
+          ? `<a href="mailto:${m.email}" style="font-size:13px;color:var(--diamond);text-decoration:none">${m.email}</a>`
+          : `<span style="font-size:13px;color:var(--ink4)">未登録</span>`}
+      </div>
+      <div style="display:flex;gap:10px;margin-bottom:7px;align-items:center">
+        <span style="font-size:11px;color:var(--ink4);font-family:var(--mono);min-width:60px">Discord</span>
+        <span style="font-size:13px;color:var(--ink2)">${m.disc}</span>
+        <button onclick="navigator.clipboard.writeText('${m.disc}').then(()=>alert('コピーしました'))" style="padding:3px 8px;border-radius:5px;border:1px solid var(--rule2);background:var(--bg);color:var(--ink3);font:11px var(--sans);cursor:pointer">コピー</button>
+      </div>
+      <div style="display:flex;gap:10px;margin-bottom:7px">
+        <span style="font-size:11px;color:var(--ink4);font-family:var(--mono);min-width:60px">入学媒体</span>
+        <span style="font-size:13px;color:var(--ink2)">${m.media}</span>
+      </div>
+      <div style="display:flex;gap:10px;margin-bottom:7px">
+        <span style="font-size:11px;color:var(--ink4);font-family:var(--mono);min-width:60px">入会日</span>
+        <span style="font-size:13px;color:var(--ink2)">${String(m.join).slice(0,10)}</span>
+      </div>
       ${m.resume?`<a href="${m.resume}" target="_blank" style="display:flex;align-items:center;gap:8px;padding:10px 12px;background:var(--diamond-bg);border:1px solid var(--diamond-b);border-radius:9px;text-decoration:none;margin-top:8px;font-size:13px;color:var(--diamond);font-weight:500">📄 履歴書・参考資料を開く ↗</a>`:''}
     </div>
 
@@ -1303,12 +1316,11 @@ function renderApps(){
           <div class="acard-name">${a.name}</div>
           <div class="acard-disc">${a.disc}</div>
         </div>
-        <span class="${scClass(a.score)}" style="font-family:var(--mono);font-size:16px;font-weight:700">${a.score}</span>
+        <span class="sp ${SP_MAP[a.status]||'sp-review'}">${a.status}</span>
       </div>
       <div class="acard-info">
-        <span class="ainfo">${a.date}</span>
+        <span class="ainfo">${String(a.date).slice(0,10)}</span>
         <span class="ainfo">📡 ${a.media}</span>
-        <span class="sp ${SP_MAP[a.status]||'sp-review'}">${a.status}</span>
       </div>
       <div class="acard-actions">
         <a href="${a.url}" style="padding:8px 12px;border-radius:9px;background:var(--diamond-bg);color:var(--diamond);font:12px var(--sans);text-decoration:none;font-weight:500;border:1px solid var(--diamond-b)">作品 ↗</a>
