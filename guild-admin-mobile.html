@@ -687,6 +687,59 @@ select.finput {
   </div>
 </div>
 
+<!-- ── Edit Member Sheet ── -->
+<div class="sheet-overlay" id="sheet-edit" onclick="closeSheet('sheet-edit',event)">
+  <div class="sheet">
+    <div class="sheet-handle"></div>
+    <div class="sheet-head">
+      <div class="sheet-title">メンバー情報を編集</div>
+      <div class="sheet-sub" id="edit-target-label"></div>
+    </div>
+    <div class="sheet-body">
+      <div class="field-row" style="margin-bottom:16px">
+        <div class="field"><label class="field-label">本名</label><input class="finput" id="edit-name"></div>
+        <div class="field"><label class="field-label">Discord名</label><input class="finput" id="edit-disc"></div>
+      </div>
+      <div class="field"><label class="field-label">メールアドレス</label><input class="finput" type="email" id="edit-email"></div>
+      <div class="field-row" style="margin-bottom:16px">
+        <div class="field"><label class="field-label">入学媒体</label>
+          <select class="finput" id="edit-media">
+            <option value="Discord">Discord</option>
+            <option value="Twitter">Twitter</option>
+            <option value="YouTube">YouTube</option>
+            <option value="vaultroom">vaultroom</option>
+            <option value="紹介">紹介</option>
+            <option value="その他">その他</option>
+          </select>
+        </div>
+        <div class="field"><label class="field-label">ランク</label>
+          <select class="finput" id="edit-rank">
+            <option value="bronze">🥉 ブロンズ</option>
+            <option value="silver">🥈 シルバー</option>
+            <option value="gold">🥇 ゴールド</option>
+            <option value="plat">💠 プラチナ</option>
+            <option value="diamond">💎 ダイヤモンド</option>
+            <option value="master">👑 マスター</option>
+          </select>
+        </div>
+      </div>
+      <div class="field"><label class="field-label">ステータス</label>
+        <select class="finput" id="edit-status">
+          <option value="アクティブ">アクティブ</option>
+          <option value="休止中">休止中</option>
+          <option value="卒業">卒業</option>
+        </select>
+      </div>
+      <div class="field"><label class="field-label">履歴書</label><input class="finput" id="edit-resume"></div>
+      <div class="btn-row">
+        <button class="btn btn-ghost" onclick="closeSheet('sheet-edit')">キャンセル</button>
+        <button class="btn btn-solid" onclick="submitEditMember()">保存する</button>
+      </div>
+      <div style="height:8px"></div>
+    </div>
+  </div>
+</div>
+
 <script>
 // ── Data ───────────────────────────────────────────────────────
 const RANKS = {
@@ -881,7 +934,70 @@ function renderMembers(){
   }).join('') || '<div style="text-align:center;padding:40px;color:var(--ink4);font-family:var(--mono)">該当なし</div>';
 }
 
-// ── ランク変更 ─────────────────────────────────────────────────
+// ── Edit Member ────────────────────────────────────────────────
+function openEditMember(mId){
+  const m = MEMBERS.find(x=>x.id===mId); if(!m) return;
+  document.getElementById('edit-target-label').textContent = m.name;
+  document.getElementById('edit-name').value   = m.name   || '';
+  document.getElementById('edit-disc').value   = m.disc   || '';
+  document.getElementById('edit-email').value  = m.email  || '';
+  document.getElementById('edit-resume').value = m.resume || '';
+
+  // 入学媒体
+  const mediaEl = document.getElementById('edit-media');
+  const mediaOpts = [...mediaEl.options].map(o=>o.value);
+  mediaEl.value = mediaOpts.includes(m.media) ? m.media : 'その他';
+
+  // ランク
+  document.getElementById('edit-rank').value   = normalizeRank(m.rank);
+
+  // ステータス
+  const statusEl = document.getElementById('edit-status');
+  const statusOpts = [...statusEl.options].map(o=>o.value);
+  statusEl.value = statusOpts.includes(m.status) ? m.status : 'アクティブ';
+
+  // 編集対象IDを保持
+  document.getElementById('sheet-edit').dataset.mId = mId;
+  openSheet('sheet-edit');
+}
+
+function submitEditMember(){
+  const mId = document.getElementById('sheet-edit').dataset.mId;
+  const m = MEMBERS.find(x=>x.id===mId); if(!m) return;
+
+  const newRank   = document.getElementById('edit-rank').value;
+  const newStatus = document.getElementById('edit-status').value;
+
+  // ローカル更新
+  m.name   = document.getElementById('edit-name').value.trim()   || m.name;
+  m.disc   = document.getElementById('edit-disc').value.trim()   || m.disc;
+  m.email  = document.getElementById('edit-email').value.trim();
+  m.media  = document.getElementById('edit-media').value;
+  m.resume = document.getElementById('edit-resume').value.trim();
+  m.rank   = newRank;
+  m.status = newStatus;
+
+  closeSheet('sheet-edit');
+
+  // GASに保存
+  gasPost({
+    action:  'updateMember',
+    id:      mId,
+    name:    m.name,
+    disc:    m.disc,
+    email:   m.email,
+    media:   m.media,
+    resume:  m.resume,
+    rank:    rankToJa(newRank),
+    status:  newStatus,
+  }).catch(()=>console.warn('編集の保存に失敗'));
+
+  renderDash();
+  if(document.getElementById('page-members').classList.contains('on'))    renderMembers();
+  if(document.getElementById('page-promotion').classList.contains('on'))  renderPromo();
+}
+
+
 function setRank(mId, newRank) {
   const m = MEMBERS.find(x=>x.id===mId); if(!m) return;
   if(m.rank === newRank) return;
@@ -990,7 +1106,8 @@ function openMemberSheet(mId){
 
     <div class="btn-row">
       <button class="btn btn-ghost" onclick="closeSheet('sheet-member')">閉じる</button>
-      <button class="btn btn-solid" onclick="closeSheet('sheet-member');openEvalSheet('${m.id}')">✎ 評価入力</button>
+      <button class="btn" style="flex:1;background:var(--bg2);color:var(--ink);border:1px solid var(--rule2)" onclick="closeSheet('sheet-member');openEditMember('${m.id}')">✏️ 編集</button>
+      <button class="btn btn-solid" onclick="closeSheet('sheet-member');openEvalSheet('${m.id}')">✎ 評価</button>
     </div>
     <div style="display:flex;gap:8px;margin-top:10px;align-items:center">
       <span style="font-size:12px;color:var(--ink3);white-space:nowrap">ランク変更</span>
