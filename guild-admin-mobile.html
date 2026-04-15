@@ -1577,82 +1577,26 @@ function toggleSearch(){
   const bar=document.getElementById('search-bar');
   const on=bar.classList.toggle('on');
   if(on) setTimeout(()=>document.getElementById('search-input').focus(),50);
-  else {
-    document.getElementById('search-input').value='';
-    const cur=document.querySelector('.nav-btn.on');
-    if(cur){
-      const page=cur.id.replace('nav-','');
-      if(page==='members') renderMembers();
-      if(page==='gallery') renderGallery();
-    }
-  }
+  else document.getElementById('search-input').value='';
 }
 
 function doSearch(q){
-  q=q.toLowerCase().trim();
+  // ヘッダー検索欄はページ内検索欄に転送するだけ
   const activePage=document.querySelector('.page.on');
   if(!activePage) return;
-
   if(activePage.id==='page-members'){
-    const wkMap={};WORKS.forEach(w=>{wkMap[w.mId]=(wkMap[w.mId]||0)+1});
-    const list=q
-      ? MEMBERS.filter(m=>m.name.toLowerCase().includes(q)||m.disc.toLowerCase().includes(q)||(m.email||'').toLowerCase().includes(q))
-      : (mFilter==='all'?MEMBERS:MEMBERS.filter(m=>m.rank===mFilter));
-    document.getElementById('m-cnt').textContent=list.length+'人';
-    document.getElementById('member-list').innerHTML=list.map(m=>{
-      const R=RANKS[m.rank];
-      return `<div class="mcard" onclick="openMemberSheet('${m.id}')">
-        <div class="mcard-stripe" style="background:${R.color}"></div>
-        <div class="mcard-row1">
-          <div class="av av-${m.rank}" style="width:40px;height:40px">${m.name[0]}</div>
-          <div style="flex:1;min-width:0"><div class="mcard-name">${m.name}</div><div class="mcard-disc">${m.disc}</div></div>
-          ${rankBadge(m.rank)}
-        </div>
-        <div class="mcard-tags">
-          <span class="mtag">📡 ${m.media}</span>
-          <span class="mtag">作品 ${wkMap[m.id]||0}件</span>
-          ${m.status==='休止中'?'<span class="mtag" style="background:var(--bronze-bg);color:var(--bronze)">休止中</span>':''}
-        </div>
-        <div>${EVAL_AXES.map(ax=>`<div class="eval-row"><span class="eval-lbl">${ax.label.slice(0,4)}</span><div class="eval-pips">${pips(m.eval[ax.key],ax.key)}</div><span class="eval-num" style="color:${ax.color}">${m.eval[ax.key]}</span></div>`).join('')}</div>
-        <div style="display:flex;justify-content:flex-end;margin-top:10px;padding-top:9px;border-top:1px solid var(--rule);gap:8px">
-          ${m.resume?`<button onclick="event.stopPropagation();window.open('${m.resume}')" style="padding:6px 12px;border-radius:8px;background:var(--diamond-bg);color:var(--diamond);border:1px solid var(--diamond-b);font:12px var(--sans);cursor:pointer;font-weight:500">履歴書 ↗</button>`:''}
-          <button onclick="event.stopPropagation();openEvalSheet('${m.id}')" style="padding:6px 14px;border-radius:8px;background:var(--ink);color:white;border:none;font:13px var(--sans);cursor:pointer;font-weight:500">✎ 評価</button>
-          <button onclick="event.stopPropagation();deleteMember('${m.id}','${m.name}')" style="padding:6px 10px;border-radius:8px;background:var(--bronze-bg);color:var(--bronze);border:1px solid var(--bronze-b);font:13px var(--sans);cursor:pointer">🗑</button>
-        </div>
-      </div>`;
-    }).join('')||'<div style="text-align:center;padding:40px;color:var(--ink4)">該当なし</div>';
-
+    const el=document.getElementById('member-search');
+    if(el){ el.value=q; renderMembers(); }
   } else if(activePage.id==='page-gallery'){
-    let list=[...WORKS].sort((a,b)=>b.id.localeCompare(a.id));
-    if(q) list=list.filter(w=>
-      w.title.toLowerCase().includes(q)||
-      w.disc.toLowerCase().includes(q)||
-      (w.folder||'').includes(q)||
-      (w.fb||'').toLowerCase().includes(q));
-    document.getElementById('g-cnt').textContent=list.length+'件';
-    document.getElementById('gallery-list').innerHTML=list.map(w=>{
-      const m=MEMBERS.find(x=>x.id===w.mId);
-      const R=m?RANKS[m.rank]:null;
-      const F=FOLDER_MAP[w.folder]||FOLDER_DEFAULT;
-      return `<div class="wcard" onclick="window.open('${w.url}')">
-        <div class="wthumb ${F.th}" style="position:relative">
-          <span style="font-size:36px">${w.icon||F.icon}</span>
-          <span class="wcat" style="background:${F.color}18;color:${F.color};border:1px solid ${F.color}40">${F.icon} ${F.label}</span>
-          ${R?`<span style="position:absolute;top:8px;right:8px;font-size:15px">${R.icon}</span>`:''}
-        </div>
-        <div class="wbody">
-          <div class="wtitle">${w.title}</div>
-          <div class="wmeta"><span>${w.disc}</span><span style="margin-left:auto;color:var(--ink4)">${String(w.date).slice(0,10)}</span></div>
-          ${w.fb?`<div class="wfb">${w.fb}</div>`:''}
-          <div style="margin-top:8px"><a href="${w.url}" style="font-size:12px;color:var(--diamond);font-family:var(--mono);text-decoration:none" onclick="event.stopPropagation()">Drive ↗</a></div>
-        </div>
-      </div>`;
-    }).join('')||'<div style="text-align:center;padding:40px;color:var(--ink4)">該当なし</div>';
-
+    const el=document.getElementById('gallery-search');
+    if(el){ el.value=q; renderGallery(); }
   } else {
     if(!q) return;
     nav('members',document.getElementById('nav-members'));
-    setTimeout(()=>doSearch(q),50);
+    setTimeout(()=>{
+      const el=document.getElementById('member-search');
+      if(el){ el.value=q; renderMembers(); }
+    },50);
   }
 }
 
