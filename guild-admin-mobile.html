@@ -995,7 +995,7 @@ function renderWeekly(){
 
   // ランキング（初期は5位まで、展開で全件）
   const renderRankItem = (w, i) => {
-    const medal = i===0?'🥇':i===1?'🥈':i===2?'🥉':`${i+1}.`;
+    const rank = `${i+1}.`;
     // メンバーIDを特定（username → disc の両方で試す）
     const uname = String(w.username || '').toLowerCase();
     let mId = discToMember[uname];
@@ -1008,14 +1008,14 @@ function renderWeekly(){
     const clickable = mId ? `onclick="openEvalSheet('${mId}')" style="cursor:pointer"` : '';
     return `<div class="ri" ${clickable}>
       <div class="ri-info">
-        <div class="ri-title">${medal} ${w.username}</div>
+        <div class="ri-title">${rank} ${w.username}</div>
         <div class="ri-sub">メッセージ ${w.totalMessages||0}件 · 添付 ${w.totalAttachments||0}件</div>
       </div>
     </div>`;
   };
 
-  const top5 = active.slice(0, 5).map(renderRankItem).join('');
-  const rest = active.slice(5).map(renderRankItem).join('');
+  const top5 = active.slice(0, 5).map((w, i) => renderRankItem(w, i)).join('');
+  const rest = active.slice(5).map((w, i) => renderRankItem(w, i + 5)).join('');
 
   el.innerHTML = `
     <div style="padding:12px 14px;background:var(--bg2);border-radius:10px;margin-bottom:10px;font-size:13px;color:var(--ink2)">
