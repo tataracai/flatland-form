@@ -1084,7 +1084,13 @@ function jumpToRank(rank){
 function renderMembers(){
   const q = (document.getElementById('member-search')?.value || '').trim();
   let list = mFilter==='all' ? MEMBERS : MEMBERS.filter(m=>m.rank===mFilter);
-  if(q) list = list.filter(m => matchQ(q, m.name, m.disc, m.email||''));
+  if(q) {
+    const nq = normalizeQ(q);
+    list = list.filter(m => {
+      const blob = normalizeQ(`${m.name || ''} ${m.disc || ''} ${m.email || ''}`);
+      return blob.includes(nq);
+    });
+  }
   document.getElementById('m-cnt').textContent=list.length+'人';
   const wkMap={};WORKS.forEach(w=>{wkMap[w.mId]=(wkMap[w.mId]||0)+1;});
   document.getElementById('member-list').innerHTML = list.map(m=>{
